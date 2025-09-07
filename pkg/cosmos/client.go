@@ -3,13 +3,15 @@ package cosmos
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"go.uber.org/zap"

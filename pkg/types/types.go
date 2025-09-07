@@ -255,25 +255,3 @@ type ChainInfo struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// API response types
-type AccountState struct {
-	ChainName   string       `json:"chain_name"`
-	Address     string       `json:"address"`
-	Balances    []Balance    `json:"balances"`
-	Delegations []Delegation `json:"delegations"`
-	// TODO: Add unbonding, redelegations, rewards
-}
-
-
-type CrossChainAccountState struct {
-	Address string                    `json:"address"`
-	Chains  map[string]AccountState   `json:"chains"`
-	Totals  CrossChainTotals         `json:"totals"`
-}
-
-type CrossChainTotals struct {
-	TotalBalance   map[string]string `json:"total_balance"`   // denom -> amount
-	TotalDelegated map[string]string `json:"total_delegated"` // denom -> amount
-	TotalUnbonding map[string]string `json:"total_unbonding"` // denom -> amount
-	TotalRewards   map[string]string `json:"total_rewards"`   // denom -> amount
-}
