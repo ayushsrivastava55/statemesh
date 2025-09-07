@@ -97,27 +97,23 @@ func (c *Client) GetAllBalances(ctx context.Context, address string) ([]sdk.Coin
 	return resp.Balances, nil
 }
 
-// GetSupplyOf gets the total supply of a specific denom
-func (c *Client) GetSupplyOf(ctx context.Context, denom string) (*banktypes.Coin, error) {
+// GetTotalSupply gets the total supply for a specific denom
+func (c *Client) GetTotalSupply(ctx context.Context, denom string) (sdk.Coin, error) {
 	req := &banktypes.QuerySupplyOfRequest{
 		Denom: denom,
 	}
 
 	resp, err := c.bankClient.SupplyOf(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get supply: %w", err)
+		return sdk.Coin{}, fmt.Errorf("failed to get supply: %w", err)
 	}
 
-	return &resp.Amount, nil
+	return resp.Amount, nil
 }
 
-// GetTotalSupply gets the total supply of all denoms
-func (c *Client) GetTotalSupply(ctx context.Context) ([]banktypes.Coin, error) {
-	req := &banktypes.QueryTotalSupplyRequest{
-		Pagination: &query.PageRequest{
-			Limit: 1000,
-		},
-	}
+// GetAllSupply gets the total supply for all denoms
+func (c *Client) GetAllSupply(ctx context.Context) ([]sdk.Coin, error) {
+	req := &banktypes.QueryTotalSupplyRequest{}
 
 	resp, err := c.bankClient.TotalSupply(ctx, req)
 	if err != nil {
@@ -226,11 +222,10 @@ func (c *Client) GetDelegatorUnbondingDelegations(ctx context.Context, delegator
 
 // Distribution module methods
 
-// GetDelegationRewards gets delegation rewards for a specific delegation
-func (c *Client) GetDelegationRewards(ctx context.Context, delegatorAddr, validatorAddr string) ([]banktypes.DecCoin, error) {
+// GetDelegatorRewards gets rewards for a delegator
+func (c *Client) GetDelegatorRewards(ctx context.Context, delegatorAddr string) ([]sdk.DecCoin, error) {
 	req := &distrtypes.QueryDelegationRewardsRequest{
 		DelegatorAddress: delegatorAddr,
-		ValidatorAddress: validatorAddr,
 	}
 
 	resp, err := c.distrClient.DelegationRewards(ctx, req)
@@ -241,22 +236,8 @@ func (c *Client) GetDelegationRewards(ctx context.Context, delegatorAddr, valida
 	return resp.Rewards, nil
 }
 
-// GetDelegationTotalRewards gets total delegation rewards for a delegator
-func (c *Client) GetDelegationTotalRewards(ctx context.Context, delegatorAddr string) (*distrtypes.QueryDelegationTotalRewardsResponse, error) {
-	req := &distrtypes.QueryDelegationTotalRewardsRequest{
-		DelegatorAddress: delegatorAddr,
-	}
-
-	resp, err := c.distrClient.DelegationTotalRewards(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get delegation total rewards: %w", err)
-	}
-
-	return resp, nil
-}
-
 // GetValidatorCommission gets validator commission
-func (c *Client) GetValidatorCommission(ctx context.Context, validatorAddr string) ([]banktypes.DecCoin, error) {
+func (c *Client) GetValidatorCommission(ctx context.Context, validatorAddr string) ([]sdk.DecCoin, error) {
 	req := &distrtypes.QueryValidatorCommissionRequest{
 		ValidatorAddress: validatorAddr,
 	}
@@ -289,9 +270,6 @@ func (c *Client) GetProposal(ctx context.Context, proposalID uint64) (*govtypes.
 func (c *Client) GetProposals(ctx context.Context, status govtypes.ProposalStatus) ([]govtypes.Proposal, error) {
 	req := &govtypes.QueryProposalsRequest{
 		ProposalStatus: status,
-		Pagination: &query.PageRequest{
-			Limit: 1000,
-		},
 	}
 
 	resp, err := c.govClient.Proposals(ctx, req)
@@ -299,7 +277,11 @@ func (c *Client) GetProposals(ctx context.Context, status govtypes.ProposalStatu
 		return nil, fmt.Errorf("failed to get proposals: %w", err)
 	}
 
-	return resp.Proposals, nil
+	proposals := make([]govtypes.Proposal, len(resp.Proposals))
+	for i, p := range resp.Proposals {
+		proposals[i] = *p
+	}
+	return proposals, nil
 }
 
 // GetVote gets a specific vote
@@ -321,9 +303,6 @@ func (c *Client) GetVote(ctx context.Context, proposalID uint64, voter string) (
 func (c *Client) GetVotes(ctx context.Context, proposalID uint64) ([]govtypes.Vote, error) {
 	req := &govtypes.QueryVotesRequest{
 		ProposalId: proposalID,
-		Pagination: &query.PageRequest{
-			Limit: 10000,
-		},
 	}
 
 	resp, err := c.govClient.Votes(ctx, req)
@@ -331,7 +310,11 @@ func (c *Client) GetVotes(ctx context.Context, proposalID uint64) ([]govtypes.Vo
 		return nil, fmt.Errorf("failed to get votes: %w", err)
 	}
 
-	return resp.Votes, nil
+	votes := make([]govtypes.Vote, len(resp.Votes))
+	for i, v := range resp.Votes {
+		votes[i] = *v
+	}
+	return votes, nil
 }
 
 // Health check methods
