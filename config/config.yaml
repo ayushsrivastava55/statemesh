@@ -49,7 +49,7 @@ database:
     host: "localhost"
     port: 5432
     database: "statemesh"
-    username: "statemesh"
+    user: "statemesh"
     password: "statemesh_dev_password"
     ssl_mode: "disable"
     max_open_conns: 25
