@@ -1,28 +1,15 @@
 scalar Time
 
 type Query {
-  # Account queries
-  account(address: String!, chain: String!): AccountState
-  crossChainAccount(address: String!): CrossChainAccountState
+  # Health check
+  health: String!
   
   # Chain queries
   chains: [ChainInfo!]!
   chain(name: String!): ChainInfo
-  chainStats(name: String!): ChainStats
   
-  # Validator queries
-  validators(chain: String!): [Validator!]!
-  validator(chain: String!, address: String!): Validator
-  crossChainValidators(chains: [String!]!): CrossChainValidators!
-  
-  # Governance queries
-  proposals(chain: String!): [Proposal!]!
-  proposal(chain: String!, id: ID!): Proposal
-  proposalVotes(chain: String!, proposalId: ID!): [Vote!]!
-  
-  # Analytics queries
-  balanceHistory(address: String!, chain: String!, denom: String, limit: Int): [BalanceEvent!]!
-  delegationHistory(address: String!, chain: String!, limit: Int): [DelegationEvent!]!
+  # Account queries
+  account(address: String!, chain: String!): AccountState
 }
 
 type AccountState {

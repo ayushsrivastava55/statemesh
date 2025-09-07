@@ -3,8 +3,10 @@ package storage
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/cosmos/state-mesh/internal/config"
+	"github.com/cosmos/state-mesh/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -97,17 +99,77 @@ func (m *Manager) BeginTx(ctx context.Context) (*Tx, error) {
 	}
 
 	return &Tx{
-		postgres:   pgTx,
-		clickhouse: m.clickhouse,
-		logger:     m.logger,
+		postgres: pgTx,
+		logger:   m.logger,
 	}, nil
+}
+
+
+// GetBalances returns balances for an address on a chain (Bank module)
+func (m *Manager) GetBalances(ctx context.Context, address, chain string) ([]*types.Balance, error) {
+	balances, err := m.postgres.GetBalances(ctx, chain, address)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Convert slice to pointer slice
+	result := make([]*types.Balance, len(balances))
+	for i := range balances {
+		result[i] = &balances[i]
+	}
+	return result, nil
+}
+
+// GetDelegations returns delegations for an address on a chain (Staking module)
+func (m *Manager) GetDelegations(ctx context.Context, address, chain string) ([]*types.Delegation, error) {
+	delegations, err := m.postgres.GetDelegations(ctx, chain, address)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Convert slice to pointer slice
+	result := make([]*types.Delegation, len(delegations))
+	for i := range delegations {
+		result[i] = &delegations[i]
+	}
+	return result, nil
+}
+
+// GetChains returns all configured chains
+func (m *Manager) GetChains(ctx context.Context) ([]*types.ChainInfo, error) {
+	// For now, return demo data based on PRD requirements
+	return []*types.ChainInfo{
+		{
+			Name:         "cosmoshub",
+			ChainID:      "cosmoshub-4", 
+			Status:       "active",
+			LatestHeight: 12345678,
+			LatestTime:   time.Now(),
+			UpdatedAt:    time.Now(),
+		},
+	}, nil
+}
+
+// GetChain returns a specific chain by name
+func (m *Manager) GetChain(ctx context.Context, name string) (*types.ChainInfo, error) {
+	chains, err := m.GetChains(ctx)
+	if err != nil {
+		return nil, err
+	}
+	
+	for _, chain := range chains {
+		if chain.Name == name {
+			return chain, nil
+		}
+	}
+	
+	return nil, fmt.Errorf("chain not found: %s", name)
 }
 
 // Tx represents a database transaction
 type Tx struct {
-	postgres   *PostgresTx
-	clickhouse *ClickHouseStore
-	logger     *zap.Logger
+	postgres *PostgresTx
+	logger   *zap.Logger
 }
 
 // Commit commits the transaction
@@ -127,5 +189,5 @@ func (tx *Tx) Postgres() *PostgresTx {
 
 // ClickHouse returns the ClickHouse store
 func (tx *Tx) ClickHouse() *ClickHouseStore {
-	return tx.clickhouse
+	return nil // Transactions don't support ClickHouse operations
 }

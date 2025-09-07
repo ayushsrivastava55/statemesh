@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/gin-gonic/gin"
 	"github.com/cosmos/state-mesh/internal/config"
 	"github.com/cosmos/state-mesh/internal/graphql"
+	"github.com/cosmos/state-mesh/internal/graphql/generated"
 	"github.com/cosmos/state-mesh/internal/storage"
-	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
@@ -145,24 +147,15 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// setupGraphQLHandler sets up the GraphQL handler
+// setupGraphQLHandler sets up the GraphQL handler using gqlgen
 func (s *Server) setupGraphQLHandler() (http.Handler, error) {
-	// Initialize GraphQL resolver
-	_ = graphql.NewResolver(s.storage, s.logger)
+	// Initialize GraphQL resolver with storage and logger
+	resolver := graphql.NewResolver(s.storage, s.logger)
 	
-	// For now, return a simple handler that shows the schema is ready
-	// In a production setup, this would use the generated gqlgen handler
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"data": {"message": "GraphQL resolver ready - use gqlgen to generate full handler"}}`))
-		} else {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			w.Write([]byte(`{"error": "Only POST method allowed"}`))
-		}
-	}), nil
+	// Create gqlgen server with the resolver
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+	
+	return srv, nil
 }
 
 // setupPlaygroundHandler sets up the GraphQL playground handler

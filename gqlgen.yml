@@ -24,7 +24,7 @@ resolver:
   package: graphql
 
 # Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
-# struct_tag: json
+struct_tag: json
 
 # Optional: turn on to use []Thing instead of []*Thing
 # omit_slice_element_pointers: false
@@ -75,24 +75,5 @@ models:
       - github.com/99designs/gqlgen/graphql.Int64
       - github.com/99designs/gqlgen/graphql.Int32
   Time:
-    model: time.Time
-  AccountState:
-    model: github.com/cosmos/state-mesh/pkg/types.AccountState
-  Balance:
-    model: github.com/cosmos/state-mesh/pkg/types.Balance
-  Delegation:
-    model: github.com/cosmos/state-mesh/pkg/types.Delegation
-  Validator:
-    model: github.com/cosmos/state-mesh/pkg/types.Validator
-  Proposal:
-    model: github.com/cosmos/state-mesh/pkg/types.Proposal
-  Vote:
-    model: github.com/cosmos/state-mesh/pkg/types.Vote
-  ChainInfo:
-    model: github.com/cosmos/state-mesh/pkg/types.ChainInfo
-  ChainStats:
-    model: github.com/cosmos/state-mesh/pkg/types.ChainStats
-  BalanceEvent:
-    model: github.com/cosmos/state-mesh/pkg/types.BalanceEvent
-  DelegationEvent:
-    model: github.com/cosmos/state-mesh/pkg/types.DelegationEvent
+    model:
+      - github.com/99designs/gqlgen/graphql.Time
