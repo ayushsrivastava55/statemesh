@@ -6,15 +6,13 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"go.uber.org/zap"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"go.uber.org/zap"
 )
 
 // Client represents a Cosmos SDK gRPC client
@@ -71,7 +69,7 @@ func (c *Client) ChainName() string {
 // Bank module methods
 
 // GetBalance gets the balance for a specific address and denom
-func (c *Client) GetBalance(ctx context.Context, address, denom string) (*banktypes.Coin, error) {
+func (c *Client) GetBalance(ctx context.Context, address, denom string) (sdk.Coin, error) {
 	req := &banktypes.QueryBalanceRequest{
 		Address: address,
 		Denom:   denom,
@@ -79,19 +77,16 @@ func (c *Client) GetBalance(ctx context.Context, address, denom string) (*bankty
 
 	resp, err := c.bankClient.Balance(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get balance: %w", err)
+		return sdk.Coin{}, fmt.Errorf("failed to get balance: %w", err)
 	}
 
 	return resp.Balance, nil
 }
 
 // GetAllBalances gets all balances for a specific address
-func (c *Client) GetAllBalances(ctx context.Context, address string) ([]banktypes.Coin, error) {
+func (c *Client) GetAllBalances(ctx context.Context, address string) ([]sdk.Coin, error) {
 	req := &banktypes.QueryAllBalancesRequest{
 		Address: address,
-		Pagination: &query.PageRequest{
-			Limit: 1000,
-		},
 	}
 
 	resp, err := c.bankClient.AllBalances(ctx, req)

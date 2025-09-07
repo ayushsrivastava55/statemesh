@@ -269,30 +269,3 @@ State Mesh exposes Prometheus metrics on `/metrics` endpoint:
 4. Add tests
 5. Submit a pull request
 
-## License
-
-Apache 2.0
-
-## Roadmap
-
-### Phase 1 (MVP - 4-6 weeks)
-- [x] Bank + Staking modules for Cosmos Hub
-- [x] GraphQL API + PostgreSQL backend
-- [x] CLI demo + documentation
-
-### Phase 2 (6-12 weeks)
-- [ ] Distribution, Governance, Mint modules
-- [ ] Support for 3 chains (Hub, Osmosis, Juno)
-- [ ] TypeScript and Rust SDKs
-
-### Phase 3 (12-24 weeks)
-- [ ] Cross-chain federation queries
-- [ ] Kafka streaming → ClickHouse analytics
-- [ ] Grafana dashboards + monitoring
-- [ ] IBC integration for interchain metrics
-
-## Support
-
-- Documentation: [docs.statemesh.cosmos.network](https://docs.statemesh.cosmos.network)
-- Discord: [#state-mesh](https://discord.gg/cosmosnetwork)
-- Issues: [GitHub Issues](https://github.com/cosmos/state-mesh/issues)
