@@ -1,0 +1,139 @@
+# Cosmos State Mesh Configuration
+# This is the main configuration file for the State Mesh project
+
+# Chains configuration
+chains:
+  - name: "cosmoshub"
+    chain_id: "cosmoshub-4"
+    enabled: true
+    grpc_endpoint: "cosmos-grpc.polkachu.com:14990"
+    rest_endpoint: "https://cosmos-rest.publicnode.com"
+    websocket_endpoint: "wss://cosmos-rpc.publicnode.com/websocket"
+    modules:
+      - name: "bank"
+        enabled: true
+      - name: "staking"
+        enabled: true
+      - name: "distribution"
+        enabled: true
+      - name: "governance"
+        enabled: true
+      - name: "mint"
+        enabled: true
+      - name: "slashing"
+        enabled: true
+  
+  - name: "osmosis"
+    chain_id: "osmosis-1"
+    enabled: true
+    grpc_endpoint: "osmosis-grpc.polkachu.com:12590"
+    rest_endpoint: "https://osmosis-rest.publicnode.com"
+    websocket_endpoint: "wss://osmosis-rpc.publicnode.com/websocket"
+    modules:
+      - name: "bank"
+        enabled: true
+      - name: "staking"
+        enabled: true
+      - name: "distribution"
+        enabled: true
+      - name: "governance"
+        enabled: true
+      - name: "mint"
+        enabled: true
+      - name: "slashing"
+        enabled: true
+
+# Database configuration
+database:
+  postgres:
+    host: "localhost"
+    port: 5432
+    database: "statemesh"
+    username: "statemesh"
+    password: "statemesh_dev_password"
+    ssl_mode: "disable"
+    max_open_conns: 25
+    max_idle_conns: 5
+    conn_max_lifetime: "1h"
+  
+  clickhouse:
+    host: "localhost"
+    port: 9000
+    database: "statemesh"
+    username: "statemesh"
+    password: "statemesh_dev_password"
+    max_open_conns: 10
+    max_idle_conns: 2
+    conn_max_lifetime: "1h"
+
+# Streaming configuration
+streaming:
+  kafka:
+    brokers:
+      - "localhost:9092"
+    topics:
+      state_changes: "state-changes"
+      balance_events: "balance-events"
+      delegation_events: "delegation-events"
+    producer:
+      batch_size: 100
+      flush_frequency: "1s"
+      compression: "snappy"
+      max_message_bytes: 1000000
+
+# API configuration
+api:
+  graphql:
+    port: 8080
+    playground: true
+    introspection: true
+  
+  rest:
+    port: 8081
+    timeout: "30s"
+  
+  metrics:
+    port: 8082
+    path: "/metrics"
+  
+  cors:
+    enabled: true
+    origins:
+      - "*"
+    methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+    headers:
+      - "Content-Type"
+      - "Authorization"
+
+# Ingester configuration
+ingester:
+  batch_size: 1000
+  flush_interval: "10s"
+  worker_count: 4
+  poll_interval: "5s"
+  retry_attempts: 3
+  retry_delay: "1s"
+
+# Logging configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  metrics_namespace: "statemesh"
+  
+# State Listener configuration (ADR-038)
+state_listener:
+  enabled: true
+  buffer_size: 10000
+  worker_count: 8
+  batch_size: 100
+  flush_interval: "5s"

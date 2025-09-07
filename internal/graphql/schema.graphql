@@ -1,0 +1,184 @@
+scalar Time
+
+type Query {
+  # Account queries
+  account(address: String!, chain: String!): AccountState
+  crossChainAccount(address: String!): CrossChainAccountState
+  
+  # Chain queries
+  chains: [ChainInfo!]!
+  chain(name: String!): ChainInfo
+  chainStats(name: String!): ChainStats
+  
+  # Validator queries
+  validators(chain: String!): [Validator!]!
+  validator(chain: String!, address: String!): Validator
+  crossChainValidators(chains: [String!]!): CrossChainValidators!
+  
+  # Governance queries
+  proposals(chain: String!): [Proposal!]!
+  proposal(chain: String!, id: ID!): Proposal
+  proposalVotes(chain: String!, proposalId: ID!): [Vote!]!
+  
+  # Analytics queries
+  balanceHistory(address: String!, chain: String!, denom: String, limit: Int): [BalanceEvent!]!
+  delegationHistory(address: String!, chain: String!, limit: Int): [DelegationEvent!]!
+}
+
+type AccountState {
+  chainName: String!
+  address: String!
+  balances: [Balance!]!
+  delegations: [Delegation!]!
+  # TODO: Add unbonding, redelegations, rewards
+}
+
+type CrossChainAccountState {
+  address: String!
+  chains: [ChainAccountState!]!
+  totals: CrossChainTotals!
+}
+
+type ChainAccountState {
+  chainName: String!
+  accountState: AccountState!
+}
+
+type CrossChainTotals {
+  totalBalance: [DenomAmount!]!
+  totalDelegated: [DenomAmount!]!
+  totalUnbonding: [DenomAmount!]!
+  totalRewards: [DenomAmount!]!
+}
+
+type DenomAmount {
+  denom: String!
+  amount: String!
+}
+
+type ChainInfo {
+  name: String!
+  chainId: String!
+  status: String!
+  latestHeight: Int!
+  latestTime: Time!
+  updatedAt: Time!
+}
+
+type ChainStats {
+  chainName: String!
+  totalValidators: Int!
+  activeValidators: Int!
+  totalDelegated: String!
+  totalSupply: String!
+  inflationRate: String!
+}
+
+type Balance {
+  chainName: String!
+  address: String!
+  denom: String!
+  amount: String!
+  height: Int!
+  updatedAt: Time!
+}
+
+type Delegation {
+  chainName: String!
+  delegatorAddress: String!
+  validatorAddress: String!
+  shares: String!
+  amount: String!
+  height: Int!
+  updatedAt: Time!
+}
+
+type Validator {
+  chainName: String!
+  operatorAddress: String!
+  consensusAddress: String!
+  moniker: String!
+  identity: String!
+  website: String!
+  securityContact: String!
+  details: String!
+  commissionRate: String!
+  commissionMaxRate: String!
+  commissionMaxChangeRate: String!
+  minSelfDelegation: String!
+  status: String!
+  jailed: Boolean!
+  tokens: String!
+  delegatorShares: String!
+  unbondingHeight: Int!
+  unbondingTime: Time!
+  height: Int!
+  updatedAt: Time!
+}
+
+type CrossChainValidators {
+  validators: [ChainValidators!]!
+}
+
+type ChainValidators {
+  chainName: String!
+  validators: [Validator!]!
+}
+
+type Proposal {
+  chainName: String!
+  proposalId: String!
+  content: String!
+  status: String!
+  finalTallyResult: TallyResult!
+  submitTime: Time!
+  depositEndTime: Time!
+  totalDeposit: [Coin!]!
+  votingStartTime: Time!
+  votingEndTime: Time!
+  height: Int!
+  updatedAt: Time!
+}
+
+type TallyResult {
+  yes: String!
+  abstain: String!
+  no: String!
+  noWithVeto: String!
+}
+
+type Coin {
+  denom: String!
+  amount: String!
+}
+
+type Vote {
+  chainName: String!
+  proposalId: String!
+  voter: String!
+  option: String!
+  weight: String!
+  height: Int!
+  txHash: String!
+  timestamp: Time!
+}
+
+type BalanceEvent {
+  chainName: String!
+  address: String!
+  denom: String!
+  amount: String!
+  eventType: String!
+  height: Int!
+  timestamp: Time!
+}
+
+type DelegationEvent {
+  chainName: String!
+  delegatorAddress: String!
+  validatorAddress: String!
+  amount: String!
+  eventType: String!
+  height: Int!
+  timestamp: Time!
+}

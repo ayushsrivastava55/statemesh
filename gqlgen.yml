@@ -1,0 +1,98 @@
+# Where are all the schema files located? globs are supported eg  src/**/*.graphqls
+schema:
+  - internal/graphql/*.graphql
+
+# Where should the generated server code go?
+exec:
+  filename: internal/graphql/generated/generated.go
+  package: generated
+
+# Uncomment to enable federation
+# federation:
+#   filename: graph/generated/federation.go
+#   package: generated
+
+# Where should any generated models go?
+model:
+  filename: internal/graphql/model/models_gen.go
+  package: model
+
+# Where should the resolver implementations go?
+resolver:
+  layout: follow-schema
+  dir: internal/graphql
+  package: graphql
+
+# Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
+# struct_tag: json
+
+# Optional: turn on to use []Thing instead of []*Thing
+# omit_slice_element_pointers: false
+
+# Optional: turn on to skip generation of ComplexityRoot struct content and Complexity function
+# omit_complexity: false
+
+# Optional: turn on to not generate descriptions from comments in the GraphQL schema
+# omit_descriptions: false
+
+# Optional: turn on to exclude the gqlgen version in the generated file notice. No effect if `omit_gqlgen_file_notice` is true.
+# omit_gqlgen_version_in_file_notice: false
+
+# Optional: turn on to exclude the gqlgen file notice in generated files
+# omit_gqlgen_file_notice: false
+
+# Optional: turn on to omit Is<Name>() methods to interface and unions
+# omit_interface_checks : true
+
+# Optional: turn on to skip generation of enum values from GraphQL schema
+# skip_enum_values: true
+
+# Optional: turn on to omit template usage in package names
+# omit_template_usage: false
+
+# Optional: turn on to omit builtin scalars from generated code
+# omit_builtin_scalars: false
+
+# Optional: Auto bind models from internal/model
+autobind:
+  - "github.com/cosmos/state-mesh/pkg/types"
+
+# Let gqlgen know where to find the prelude so it can generate the directive implementations
+# directives:
+#   skip:
+#     skip_reason: "Reason for skipping this field"
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64
+      - github.com/99designs/gqlgen/graphql.Int32
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64
+      - github.com/99designs/gqlgen/graphql.Int32
+  Time:
+    model: time.Time
+  AccountState:
+    model: github.com/cosmos/state-mesh/pkg/types.AccountState
+  Balance:
+    model: github.com/cosmos/state-mesh/pkg/types.Balance
+  Delegation:
+    model: github.com/cosmos/state-mesh/pkg/types.Delegation
+  Validator:
+    model: github.com/cosmos/state-mesh/pkg/types.Validator
+  Proposal:
+    model: github.com/cosmos/state-mesh/pkg/types.Proposal
+  Vote:
+    model: github.com/cosmos/state-mesh/pkg/types.Vote
+  ChainInfo:
+    model: github.com/cosmos/state-mesh/pkg/types.ChainInfo
+  ChainStats:
+    model: github.com/cosmos/state-mesh/pkg/types.ChainStats
+  BalanceEvent:
+    model: github.com/cosmos/state-mesh/pkg/types.BalanceEvent
+  DelegationEvent:
+    model: github.com/cosmos/state-mesh/pkg/types.DelegationEvent
