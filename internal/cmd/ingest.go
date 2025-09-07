@@ -98,7 +98,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	modules := viper.GetStringSlice("ingester.modules")
 
 	// Initialize ingester
-	ing, err := ingester.New(cfg.Ingester, cfg.Chains, storageManager, streamingManager, logger)
+	ing, err := ingester.New(cfg.Ingester, cfg.Chains, storageManager)
 	if err != nil {
 		return fmt.Errorf("failed to initialize ingester: %w", err)
 	}

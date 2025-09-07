@@ -5,9 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/cosmos/state-mesh/internal/config"
 	"github.com/cosmos/state-mesh/pkg/types"
-	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
@@ -19,18 +17,15 @@ type PostgresStore struct {
 }
 
 // NewPostgresStore creates a new PostgreSQL store
-func NewPostgresStore(cfg config.PostgresConfig) (*PostgresStore, error) {
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
-
-	db, err := sql.Open("postgres", connStr)
+func NewPostgresStore(dsn string, logger *zap.Logger) (*PostgresStore, error) {
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 	}
 
 	// Configure connection pool
-	db.SetMaxOpenConns(cfg.MaxConns)
-	db.SetMaxIdleConns(cfg.MinConns)
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
 
 	return &PostgresStore{
 		db:     db,

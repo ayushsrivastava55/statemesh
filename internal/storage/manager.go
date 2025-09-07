@@ -20,7 +20,7 @@ func NewManager(cfg config.DatabaseConfig) (*Manager, error) {
 	logger := zap.L().Named("storage")
 
 	// Initialize PostgreSQL
-	postgres, err := NewPostgresStore(cfg.Postgres)
+	pgStore, err := NewPostgresStore(cfg.Postgres.DSN(), logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize PostgreSQL: %w", err)
 	}
@@ -35,7 +35,7 @@ func NewManager(cfg config.DatabaseConfig) (*Manager, error) {
 	}
 
 	return &Manager{
-		postgres:   postgres,
+		postgres:   pgStore,
 		clickhouse: clickhouse,
 		logger:     logger,
 	}, nil

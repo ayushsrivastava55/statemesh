@@ -45,6 +45,12 @@ type PostgresConfig struct {
 	MinConns int    `mapstructure:"min_conns"`
 }
 
+// DSN returns the PostgreSQL Data Source Name
+func (p PostgresConfig) DSN() string {
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		p.Host, p.Port, p.User, p.Password, p.Database, p.SSLMode)
+}
+
 // ClickHouseConfig represents ClickHouse configuration
 type ClickHouseConfig struct {
 	Host     string `mapstructure:"host"`

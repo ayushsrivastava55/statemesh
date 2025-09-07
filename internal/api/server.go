@@ -147,8 +147,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 // setupGraphQLHandler sets up the GraphQL handler
 func (s *Server) setupGraphQLHandler() (http.Handler, error) {
-	// Import the GraphQL resolver
-	resolver := graphql.NewResolver(s.storage, s.logger)
+	// Initialize GraphQL resolver
+	_ = graphql.NewResolver(s.storage, s.logger)
 	
 	// For now, return a simple handler that shows the schema is ready
 	// In a production setup, this would use the generated gqlgen handler

@@ -231,10 +231,10 @@ func (s *ClickHouseStore) GetChainStats(ctx context.Context, chainName string) (
 	var stats types.ChainStats
 	err := s.conn.QueryRow(ctx, query, chainName, chainName).Scan(
 		&stats.ChainName,
-		&stats.TotalAccounts,
-		&stats.TotalSupply,
 		&stats.TotalValidators,
-		&stats.LatestHeight,
+		&stats.ActiveValidators,
+		&stats.TotalDelegated,
+		&stats.TotalSupply,
 	)
 
 	if err != nil {

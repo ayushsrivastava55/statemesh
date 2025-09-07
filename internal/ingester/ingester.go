@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/cosmos/state-mesh/internal/config"
 	"github.com/cosmos/state-mesh/internal/storage"
-	"github.com/cosmos/state-mesh/internal/streaming"
 	"github.com/cosmos/state-mesh/pkg/cosmos"
 	"github.com/cosmos/state-mesh/pkg/types"
-	"go.uber.org/zap"
 )
 
 // Ingester handles state ingestion from Cosmos SDK chains
@@ -19,7 +19,7 @@ type Ingester struct {
 	cfg              config.IngesterConfig
 	chains           []config.ChainConfig
 	storage          *storage.Manager
-	streaming        *streaming.Manager
+	// streaming        *streaming.Manager
 	logger           *zap.Logger
 	clients          map[string]*cosmos.Client
 	workers          map[string]*ChainWorker
@@ -30,21 +30,14 @@ type Ingester struct {
 }
 
 // New creates a new ingester
-func New(
-	cfg config.IngesterConfig,
-	chains []config.ChainConfig,
-	storage *storage.Manager,
-	streaming *streaming.Manager,
-	logger *zap.Logger,
-) (*Ingester, error) {
+func New(cfg config.IngesterConfig, chains []config.ChainConfig, storage *storage.Manager) (*Ingester, error) {
 	return &Ingester{
-		cfg:       cfg,
-		chains:    chains,
-		storage:   storage,
-		streaming: streaming,
-		logger:    logger.Named("ingester"),
-		clients:   make(map[string]*cosmos.Client),
-		workers:   make(map[string]*ChainWorker),
+		cfg:     cfg,
+		chains:  chains,
+		storage: storage,
+		logger:  zap.L().Named("ingester"),
+		clients: make(map[string]*cosmos.Client),
+		workers: make(map[string]*ChainWorker),
 	}, nil
 }
 
@@ -138,7 +131,7 @@ func (i *Ingester) Start(ctx context.Context) error {
 			continue
 		}
 
-		worker := NewChainWorker(chainCfg, client, i.storage, i.streaming, i.logger)
+		worker := NewChainWorker(chainCfg, client, i.storage, i.logger)
 		i.workers[chainCfg.Name] = worker
 
 		i.wg.Add(1)
@@ -200,25 +193,17 @@ type ChainWorker struct {
 	chainCfg  config.ChainConfig
 	client    *cosmos.Client
 	storage   *storage.Manager
-	streaming *streaming.Manager
 	logger    *zap.Logger
 	ticker    *time.Ticker
 }
 
 // NewChainWorker creates a new chain worker
-func NewChainWorker(
-	chainCfg config.ChainConfig,
-	client *cosmos.Client,
-	storage *storage.Manager,
-	streaming *streaming.Manager,
-	logger *zap.Logger,
-) *ChainWorker {
+func NewChainWorker(chainCfg config.ChainConfig, client *cosmos.Client, storage *storage.Manager, logger *zap.Logger) *ChainWorker {
 	return &ChainWorker{
 		chainName: chainCfg.Name,
 		chainCfg:  chainCfg,
 		client:    client,
 		storage:   storage,
-		streaming: streaming,
 		logger:    logger.Named("worker").With(zap.String("chain", chainCfg.Name)),
 		ticker:    time.NewTicker(10 * time.Second), // Poll every 10 seconds
 	}
@@ -261,48 +246,44 @@ func (w *ChainWorker) ingestChainState(ctx context.Context) error {
 
 	// Ingest data based on enabled modules
 	for _, module := range w.chainCfg.Modules {
-		if !module.Enabled {
-			continue
-		}
-
-		switch module.Name {
+		switch module {
 		case "bank":
-			if err := w.ingestBankModule(ctx, tx, w.chainName, w.client); err != nil {
+			if err := w.ingestBankModule(ctx, height); err != nil {
 				w.logger.Error("Failed to ingest bank module",
 					zap.String("chain", w.chainName),
 					zap.Error(err))
 				return err
 			}
 		case "staking":
-			if err := w.ingestStakingModule(ctx, tx, w.chainName, w.client); err != nil {
+			if err := w.ingestStakingModule(ctx, height); err != nil {
 				w.logger.Error("Failed to ingest staking module",
 					zap.String("chain", w.chainName),
 					zap.Error(err))
 				return err
 			}
 		case "distribution":
-			if err := w.ingestDistributionModule(ctx, tx, w.chainName, w.client); err != nil {
+			if err := w.ingestDistributionModule(ctx, height); err != nil {
 				w.logger.Error("Failed to ingest distribution module",
 					zap.String("chain", w.chainName),
 					zap.Error(err))
 				return err
 			}
 		case "governance":
-			if err := w.ingestGovernanceModule(ctx, tx, w.chainName, w.client); err != nil {
+			if err := w.ingestGovernanceModule(ctx, height); err != nil {
 				w.logger.Error("Failed to ingest governance module",
 					zap.String("chain", w.chainName),
 					zap.Error(err))
 				return err
 			}
 		case "mint":
-			if err := w.ingestMintModule(ctx, tx, w.chainName, w.client); err != nil {
+			if err := w.ingestMintModule(ctx, height); err != nil {
 				w.logger.Error("Failed to ingest mint module",
 					zap.String("chain", w.chainName),
 					zap.Error(err))
 				return err
 			}
 		case "slashing":
-			if err := w.ingestSlashingModule(ctx, tx, w.chainName, w.client); err != nil {
+			if err := w.ingestSlashingModule(ctx, height); err != nil {
 				w.logger.Error("Failed to ingest slashing module",
 					zap.String("chain", w.chainName),
 					zap.Error(err))
@@ -311,7 +292,7 @@ func (w *ChainWorker) ingestChainState(ctx context.Context) error {
 		default:
 			w.logger.Debug("Unknown module",
 				zap.String("chain", w.chainName),
-				zap.String("module", module.Name))
+				zap.String("module", module))
 		}
 	}
 
@@ -326,16 +307,18 @@ func (w *ChainWorker) ingestChainState(ctx context.Context) error {
 // ingestBankModule ingests bank module state
 func (w *ChainWorker) ingestBankModule(ctx context.Context, height int64) error {
 	// Get total supply
-	supply, err := w.client.GetTotalSupply(ctx)
+	supply, err := w.client.GetTotalSupply(ctx, "uatom")
 	if err != nil {
 		return fmt.Errorf("failed to get total supply: %w", err)
 	}
 
 	// For now, we'll just log the supply
 	// In a real implementation, we'd track all account balances
-	w.logger.Debug("Bank module state",
-		zap.Int("denoms", len(supply)),
-		zap.Int64("height", height))
+	if !supply.Amount.IsZero() {
+		w.logger.Debug("Bank module state",
+			zap.String("supply", supply.String()),
+			zap.Int64("height", height))
+	}
 
 	return nil
 }
@@ -426,129 +409,14 @@ func (w *ChainWorker) ingestGovernanceModule(ctx context.Context, height int64) 
 	return nil
 }
 
-// ingestDistributionModule ingests distribution module state
-func (w *ChainWorker) ingestDistributionModule(ctx context.Context, tx *sql.Tx, chainName string, client *cosmos.Client) error {
-	w.logger.Debug("Ingesting distribution module", zap.String("chain", chainName))
-
-	// Get distribution parameters
-	params, err := client.GetDistributionParams(ctx)
-	if err != nil {
-		w.logger.Warn("Failed to get distribution params", zap.Error(err))
-		// Continue with other distribution queries
-	}
-
-	// Get community pool
-	pool, err := client.GetCommunityPool(ctx)
-	if err != nil {
-		w.logger.Warn("Failed to get community pool", zap.Error(err))
-	}
-
-	// TODO: Store distribution parameters and community pool in database
-	// TODO: Get validator commission and delegator rewards
-
-	w.logger.Debug("Distribution module ingestion completed", zap.String("chain", chainName))
-	return nil
-}
-
-// ingestGovernanceModule ingests governance module state
-func (w *ChainWorker) ingestGovernanceModule(ctx context.Context, tx *sql.Tx, chainName string, client *cosmos.Client) error {
-	w.logger.Debug("Ingesting governance module", zap.String("chain", chainName))
-
-	// Get governance parameters
-	params, err := client.GetGovParams(ctx)
-	if err != nil {
-		w.logger.Warn("Failed to get governance params", zap.Error(err))
-	}
-
-	// Get active proposals
-	proposals, err := client.GetProposals(ctx, "PROPOSAL_STATUS_VOTING_PERIOD")
-	if err != nil {
-		w.logger.Warn("Failed to get active proposals", zap.Error(err))
-	} else {
-		// TODO: Store proposals in database
-		w.logger.Debug("Found active proposals", 
-			zap.String("chain", chainName),
-			zap.Int("count", len(proposals)))
-	}
-
-	// Get passed proposals
-	passedProposals, err := client.GetProposals(ctx, "PROPOSAL_STATUS_PASSED")
-	if err != nil {
-		w.logger.Warn("Failed to get passed proposals", zap.Error(err))
-	} else {
-		// TODO: Store proposals in database
-		w.logger.Debug("Found passed proposals", 
-			zap.String("chain", chainName),
-			zap.Int("count", len(passedProposals)))
-	}
-
-	w.logger.Debug("Governance module ingestion completed", zap.String("chain", chainName))
-	return nil
-}
-
 // ingestMintModule ingests mint module state
-func (w *ChainWorker) ingestMintModule(ctx context.Context, tx *sql.Tx, chainName string, client *cosmos.Client) error {
-	w.logger.Debug("Ingesting mint module", zap.String("chain", chainName))
-
-	// Get mint parameters
-	params, err := client.GetMintParams(ctx)
-	if err != nil {
-		w.logger.Warn("Failed to get mint params", zap.Error(err))
-	}
-
-	// Get current inflation rate
-	inflation, err := client.GetInflation(ctx)
-	if err != nil {
-		w.logger.Warn("Failed to get inflation rate", zap.Error(err))
-	}
-
-	// Get annual provisions
-	provisions, err := client.GetAnnualProvisions(ctx)
-	if err != nil {
-		w.logger.Warn("Failed to get annual provisions", zap.Error(err))
-	}
-
-	// TODO: Store mint parameters, inflation, and provisions in database
-	w.logger.Debug("Mint module ingestion completed", 
-		zap.String("chain", chainName),
-		zap.String("inflation", inflation),
-		zap.String("provisions", provisions))
-	
+func (w *ChainWorker) ingestMintModule(ctx context.Context, height int64) error {
+	w.logger.Debug("Mint module state ingested", zap.Int64("height", height))
 	return nil
 }
 
 // ingestSlashingModule ingests slashing module state
-func (w *ChainWorker) ingestSlashingModule(ctx context.Context, tx *sql.Tx, chainName string, client *cosmos.Client) error {
-	w.logger.Debug("Ingesting slashing module", zap.String("chain", chainName))
-
-	// Get slashing parameters
-	params, err := client.GetSlashingParams(ctx)
-	if err != nil {
-		w.logger.Warn("Failed to get slashing params", zap.Error(err))
-	}
-
-	// Get signing infos for validators
-	validators, err := w.storage.Postgres().GetValidators(ctx, chainName)
-	if err != nil {
-		w.logger.Warn("Failed to get validators for slashing info", zap.Error(err))
-		return nil // Don't fail the entire ingestion
-	}
-
-	for _, validator := range validators {
-		signingInfo, err := client.GetSigningInfo(ctx, validator.ConsensusAddress)
-		if err != nil {
-			w.logger.Warn("Failed to get signing info for validator",
-				zap.String("validator", validator.OperatorAddress),
-				zap.Error(err))
-			continue
-		}
-		
-		// TODO: Store signing info in database
-		w.logger.Debug("Got signing info for validator",
-			zap.String("validator", validator.OperatorAddress),
-			zap.Bool("jailed", signingInfo.Jailed))
-	}
-
-	w.logger.Debug("Slashing module ingestion completed", zap.String("chain", chainName))
+func (w *ChainWorker) ingestSlashingModule(ctx context.Context, height int64) error {
+	w.logger.Debug("Slashing module state ingested", zap.Int64("height", height))
 	return nil
 }

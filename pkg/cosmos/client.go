@@ -3,12 +3,14 @@ package cosmos
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"go.uber.org/zap"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -80,7 +82,7 @@ func (c *Client) GetBalance(ctx context.Context, address, denom string) (sdk.Coi
 		return sdk.Coin{}, fmt.Errorf("failed to get balance: %w", err)
 	}
 
-	return resp.Balance, nil
+	return *resp.Balance, nil
 }
 
 // GetAllBalances gets all balances for a specific address
@@ -322,7 +324,7 @@ func (c *Client) GetVotes(ctx context.Context, proposalID uint64) ([]govtypes.Vo
 // Ping tests the connection to the chain
 func (c *Client) Ping(ctx context.Context) error {
 	// Use a simple query to test connectivity
-	_, err := c.GetTotalSupply(ctx)
+	_, err := c.GetTotalSupply(ctx, "uatom")
 	if err != nil {
 		return fmt.Errorf("chain ping failed: %w", err)
 	}

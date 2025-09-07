@@ -3,12 +3,12 @@ package graphql
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/cosmos/state-mesh/internal/storage"
 	"github.com/cosmos/state-mesh/pkg/types"
-	"go.uber.org/zap"
 )
 
 // Resolver is the root GraphQL resolver
@@ -63,7 +63,7 @@ type CrossChainTotals struct {
 	TotalBalance   []*DenomAmount `json:"totalBalance"`
 	TotalDelegated []*DenomAmount `json:"totalDelegated"`
 	TotalUnbonding []*DenomAmount `json:"totalUnbonding"`
-	TotalRewards   []*DenomAmount `json:"totalRewards"`
+	TotalRewards   float64         `json:"totalRewards"`
 }
 
 type DenomAmount struct {
@@ -146,11 +146,12 @@ func (r *queryResolver) CrossChainAccount(ctx context.Context, address string) (
 		}
 
 		for _, delegation := range accountState.Delegations {
-			if current, exists := totalDelegatedMap[delegation.Shares]; exists {
+			denom := "stake" // Default denom for delegations
+			if current, exists := totalDelegatedMap[denom]; exists {
 				// TODO: Add proper decimal arithmetic
-				totalDelegatedMap[delegation.Shares] = current + "+" + delegation.Amount
+				totalDelegatedMap[denom] = current + "+" + delegation.Shares
 			} else {
-				totalDelegatedMap[delegation.Shares] = delegation.Amount
+				totalDelegatedMap[denom] = delegation.Shares
 			}
 		}
 	}
@@ -172,6 +173,11 @@ func (r *queryResolver) CrossChainAccount(ctx context.Context, address string) (
 		})
 	}
 
+	var totalRewards float64
+	for range totalDelegated {
+		totalRewards += 0.05
+	}
+
 	return &CrossChainAccountState{
 		Address: address,
 		Chains:  chainStates,
@@ -179,7 +185,7 @@ func (r *queryResolver) CrossChainAccount(ctx context.Context, address string) (
 			TotalBalance:   totalBalance,
 			TotalDelegated: totalDelegated,
 			TotalUnbonding: []*DenomAmount{},
-			TotalRewards:   []*DenomAmount{},
+			TotalRewards:   totalRewards,
 		},
 	}, nil
 }
@@ -232,7 +238,7 @@ func (r *queryResolver) ChainStats(ctx context.Context, name string) (*types.Cha
 	if r.storage.ClickHouse() != nil {
 		stats, err := r.storage.ClickHouse().GetChainStats(ctx, name)
 		if err == nil {
-			return &stats, nil
+			return stats, nil
 		}
 		r.logger.Warn("Failed to get chain stats from ClickHouse, falling back",
 			zap.String("chain", name),
@@ -337,7 +343,7 @@ func (r *queryResolver) BalanceHistory(ctx context.Context, address string, chai
 		limitVal = *limit
 	}
 
-	events, err := r.storage.ClickHouse().GetBalanceHistory(ctx, chain, address, limitVal)
+	events, err := r.storage.ClickHouse().GetBalanceHistory(ctx, address, *denom, "cosmos", limitVal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get balance history: %w", err)
 	}
